@@ -15,6 +15,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get breakpointRule => 'Breakpoint Rule';
 
   @override
+  String get addToBreakpoint => 'Add to Breakpoint';
+
+  @override
   String get name => 'Name';
 
   @override
@@ -130,6 +133,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get themeDark => 'Dark';
+
+  @override
+  String get fontSize => 'Font Scale';
+
+  @override
+  String get fontSizeSubtitle =>
+      'Adjust the font scale, the font size and spacing of UI elements will change accordingly';
 
   @override
   String get language => 'Language';
@@ -538,6 +548,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get search => 'Search';
+
+  @override
+  String get requestFilter => 'Request Filter';
 
   @override
   String get clearSearch => 'Clear Search';

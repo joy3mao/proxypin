@@ -15,6 +15,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get breakpointRule => '断点规则';
 
   @override
+  String get addToBreakpoint => '添加到断点';
+
+  @override
   String get name => '名称';
 
   @override
@@ -130,6 +133,12 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get themeDark => '深色';
+
+  @override
+  String get fontSize => '字体缩放';
+
+  @override
+  String get fontSizeSubtitle => '调整字体缩放比例，界面元素的字体与间距会随之变化';
 
   @override
   String get language => '语言';
@@ -536,6 +545,9 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get search => '搜索';
+
+  @override
+  String get requestFilter => '请求过滤';
 
   @override
   String get clearSearch => '清除搜索';
@@ -1222,6 +1234,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
   String get breakpointRule => '斷點規則';
 
   @override
+  String get addToBreakpoint => '添加到斷點';
+
+  @override
   String get name => '名稱';
 
   @override
@@ -1337,6 +1352,12 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get themeDark => '深色';
+
+  @override
+  String get fontSize => '字體縮放';
+
+  @override
+  String get fontSizeSubtitle => '調整字體縮放比例，介面元素的字體與間距會隨之變化';
 
   @override
   String get language => '語言';
@@ -1740,6 +1761,9 @@ class AppLocalizationsZhHant extends AppLocalizationsZh {
 
   @override
   String get search => '搜尋';
+
+  @override
+  String get requestFilter => '請求過濾';
 
   @override
   String get clearSearch => '清除搜尋';

@@ -123,6 +123,16 @@ class _PreferenceState extends State<Preference> {
                     child: Text("${localizations.themeColor}: ", style: titleStyle, textAlign: TextAlign.start)),
               ]),
               themeColor(context),
+              //字体缩放
+              Row(children: [
+                SizedBox(width: 100, child: Text("${localizations.fontSize}: ", style: titleStyle)),
+                Expanded(child: fontScaleSelector()),
+              ]),
+              Align(
+                  alignment: Alignment.centerLeft,
+                  child: Padding(
+                      padding: const EdgeInsets.only(left: 100),
+                      child: Text(localizations.fontSizeSubtitle, style: subtitleStyle))),
               const Divider(),
               ListTile(
                   contentPadding: EdgeInsets.zero,
@@ -189,6 +199,25 @@ class _PreferenceState extends State<Preference> {
               ),
             ));
       }).toList(),
+    );
+  }
+
+  ///字体缩放比例选择
+  Widget fontScaleSelector() {
+    const scales = [0.5, 0.75, 1.0, 1.25, 1.5];
+    return Wrap(
+      spacing: 6,
+      runSpacing: 6,
+      children: scales
+          .map((scale) => ChoiceChip(
+                label: Text('${scale}x'),
+                selected: appConfiguration.fontScale == scale,
+                onSelected: (_) {
+                  appConfiguration.fontScale = scale;
+                  appConfiguration.flushConfig();
+                },
+              ))
+          .toList(),
     );
   }
 

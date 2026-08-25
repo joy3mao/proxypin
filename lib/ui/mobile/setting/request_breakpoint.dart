@@ -402,7 +402,10 @@ class _RequestBreakpointPageState extends State<MobileRequestBreakpointPage> {
 class MobileBreakpointRuleEditor extends StatefulWidget {
   final RequestBreakpointRule? rule;
 
-  const MobileBreakpointRuleEditor({super.key, this.rule});
+  /// 强制以「添加」标题展示（用于右键菜单预填新建场景）
+  final bool addMode;
+
+  const MobileBreakpointRuleEditor({super.key, this.rule, this.addMode = false});
 
   @override
   State<MobileBreakpointRuleEditor> createState() => _MobileBreakpointRuleEditorState();
@@ -438,7 +441,7 @@ class _MobileBreakpointRuleEditorState extends State<MobileBreakpointRuleEditor>
     return Scaffold(
         appBar: AppBar(
             title: Text(
-                widget.rule == null
+                widget.rule == null || widget.addMode
                     ? "${localizations.add} ${localizations.breakpointRule}"
                     : "${localizations.edit} ${localizations.breakpointRule}",
                 style: const TextStyle(fontSize: 16)),

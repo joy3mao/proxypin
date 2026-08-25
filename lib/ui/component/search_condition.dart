@@ -30,7 +30,11 @@ class SearchConditions extends StatefulWidget {
   final Function(SearchModel searchModel)? onSearch;
   final EdgeInsetsGeometry? padding;
 
-  const SearchConditions({super.key, required this.searchModel, this.onSearch, this.padding});
+  // 过滤模式：只显示关键词、搜索范围、响应类型（用于抓包过滤菜单）
+  final bool filterMode;
+
+  const SearchConditions(
+      {super.key, required this.searchModel, this.onSearch, this.padding, this.filterMode = false});
 
   @override
   State<StatefulWidget> createState() {
@@ -112,14 +116,15 @@ class SearchConditionsState extends State<SearchConditions> {
           ),
           const SizedBox(height: 10),
           // protocol quick selectors placed under the keyword input (very compact)
-          protocolsWidget(),
-          const SizedBox(height: 10),
+          if (!widget.filterMode) protocolsWidget(),
+          if (!widget.filterMode) const SizedBox(height: 10),
           // keyword scope
           Text(localizations.keywordSearchScope),
           const SizedBox(height: 10),
           Wrap(
             children: [
               options('URL', Option.url),
+              options('HOST', Option.host),
               options(localizations.requestHeader, Option.requestHeader),
               options(localizations.requestBody, Option.requestBody),
               options(localizations.responseHeader, Option.responseHeader),
@@ -129,29 +134,31 @@ class SearchConditionsState extends State<SearchConditions> {
           const SizedBox(height: 10),
 
           // request method
-          row(
-            Text('${localizations.requestMethod}:'),
-            DropdownMenu(
-              initialValue: searchModel.requestMethod?.name ?? localizations.all,
-              items: HttpMethod.methods().map((e) => e.name).toList()..insert(0, localizations.all),
-              onSelected: (String value) {
-                searchModel.requestMethod = value == localizations.all ? null : HttpMethod.valueOf(value);
-              },
+          if (!widget.filterMode)
+            row(
+              Text('${localizations.requestMethod}:'),
+              DropdownMenu(
+                initialValue: searchModel.requestMethod?.name ?? localizations.all,
+                items: HttpMethod.methods().map((e) => e.name).toList()..insert(0, localizations.all),
+                onSelected: (String value) {
+                  searchModel.requestMethod = value == localizations.all ? null : HttpMethod.valueOf(value);
+                },
+              ),
             ),
-          ),
-          const SizedBox(height: 10),
+          if (!widget.filterMode) const SizedBox(height: 10),
           // request type
-          row(
-            Text('${localizations.requestType}:'),
-            DropdownMenu(
-              initialValue: Maps.getKey(requestContentMap, searchModel.requestContentType) ?? localizations.all,
-              items: requestContentMap.keys,
-              onSelected: (String value) {
-                searchModel.requestContentType = requestContentMap[value];
-              },
+          if (!widget.filterMode)
+            row(
+              Text('${localizations.requestType}:'),
+              DropdownMenu(
+                initialValue: Maps.getKey(requestContentMap, searchModel.requestContentType) ?? localizations.all,
+                items: requestContentMap.keys,
+                onSelected: (String value) {
+                  searchModel.requestContentType = requestContentMap[value];
+                },
+              ),
             ),
-          ),
-          const SizedBox(height: 10),
+          if (!widget.filterMode) const SizedBox(height: 10),
 
           // response type
           row(
@@ -164,48 +171,50 @@ class SearchConditionsState extends State<SearchConditions> {
               },
             ),
           ),
-          const SizedBox(height: 10),
+          if (!widget.filterMode) const SizedBox(height: 10),
 
           // status code range
-          row(
-            Text('${localizations.statusCode}: '),
-            Row(children: [
-              SizedBox(
-                  width: 55,
-                  height: 32,
-                  child: textField(
-                      initialValue: searchModel.statusCodeFrom?.toString(),
-                      onChanged: (val) => searchModel.statusCodeFrom = int.tryParse(val))),
-              const Padding(padding: EdgeInsets.symmetric(horizontal: 5), child: Text(" - ")),
-              SizedBox(
-                  width: 55,
-                  height: 32,
-                  child: textField(
-                      initialValue: searchModel.statusCodeTo?.toString(),
-                      onChanged: (val) => searchModel.statusCodeTo = int.tryParse(val))),
-            ]),
-          ),
-          const SizedBox(height: 10),
+          if (!widget.filterMode)
+            row(
+              Text('${localizations.statusCode}: '),
+              Row(children: [
+                SizedBox(
+                    width: 55,
+                    height: 32,
+                    child: textField(
+                        initialValue: searchModel.statusCodeFrom?.toString(),
+                        onChanged: (val) => searchModel.statusCodeFrom = int.tryParse(val))),
+                const Padding(padding: EdgeInsets.symmetric(horizontal: 5), child: Text(" - ")),
+                SizedBox(
+                    width: 55,
+                    height: 32,
+                    child: textField(
+                        initialValue: searchModel.statusCodeTo?.toString(),
+                        onChanged: (val) => searchModel.statusCodeTo = int.tryParse(val))),
+              ]),
+            ),
+          if (!widget.filterMode) const SizedBox(height: 10),
 
           // duration range (ms)
-          row(
-            Text('${localizations.duration} (ms): '),
-            Row(children: [
-              SizedBox(
-                  width: 55,
-                  height: 32,
-                  child: textField(
-                      initialValue: searchModel.durationFromMs?.toString(),
-                      onChanged: (val) => searchModel.durationFromMs = int.tryParse(val))),
-              const Padding(padding: EdgeInsets.symmetric(horizontal: 5), child: Text(" - ")),
-              SizedBox(
-                  width: 55,
-                  height: 32,
-                  child: textField(
-                      initialValue: searchModel.durationToMs?.toString(),
-                      onChanged: (val) => searchModel.durationToMs = int.tryParse(val))),
-            ]),
-          ),
+          if (!widget.filterMode)
+            row(
+              Text('${localizations.duration} (ms): '),
+              Row(children: [
+                SizedBox(
+                    width: 55,
+                    height: 32,
+                    child: textField(
+                        initialValue: searchModel.durationFromMs?.toString(),
+                        onChanged: (val) => searchModel.durationFromMs = int.tryParse(val))),
+                const Padding(padding: EdgeInsets.symmetric(horizontal: 5), child: Text(" - ")),
+                SizedBox(
+                    width: 55,
+                    height: 32,
+                    child: textField(
+                        initialValue: searchModel.durationToMs?.toString(),
+                        onChanged: (val) => searchModel.durationToMs = int.tryParse(val))),
+              ]),
+            ),
           const SizedBox(height: 15),
 
           // action buttons
@@ -336,7 +345,18 @@ class SearchConditionsState extends State<SearchConditions> {
               value: searchModel.searchOptions.contains(option),
               onChanged: (val) {
                 setState(() {
-                  val == true ? searchModel.searchOptions.add(option) : searchModel.searchOptions.remove(option);
+                  if (val == true) {
+                    // HOST 与 URL 互斥：HOST 是 URL 的子集，勾选其一自动取消另一个，
+                    // 避免 URL 全文匹配（含 query 参数）干扰按域名搜索
+                    if (option == Option.host) {
+                      searchModel.searchOptions.remove(Option.url);
+                    } else if (option == Option.url) {
+                      searchModel.searchOptions.remove(Option.host);
+                    }
+                    searchModel.searchOptions.add(option);
+                  } else {
+                    searchModel.searchOptions.remove(option);
+                  }
                 });
               })
         ]));

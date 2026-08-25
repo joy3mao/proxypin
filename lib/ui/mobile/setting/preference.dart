@@ -81,6 +81,26 @@ class _PreferenceState extends State<Preference> {
               Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 8),
                   child: themeColor(context)),
+              Divider(height: 0, thickness: 0.3, color: dividerColor),
+              ListTile(
+                  title: Text(localizations.fontSize),
+                  subtitle: Text(localizations.fontSizeSubtitle, style: const TextStyle(fontSize: 12))),
+              Padding(
+                  padding: const EdgeInsets.only(left: 16, right: 16, bottom: 12),
+                  child: Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [0.5, 0.75, 1.0, 1.25, 1.5]
+                        .map((scale) => ChoiceChip(
+                              label: Text('${scale}x'),
+                              selected: appConfiguration.fontScale == scale,
+                              onSelected: (_) {
+                                appConfiguration.fontScale = scale;
+                                appConfiguration.flushConfig();
+                              },
+                            ))
+                        .toList(),
+                  )),
             ]),
             const SizedBox(height: 12),
             section([

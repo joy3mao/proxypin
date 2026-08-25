@@ -24,6 +24,7 @@ import 'package:proxypin/ui/component/context_menu.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/network/bin/server.dart';
+import 'package:proxypin/network/components/manager/request_breakpoint_manager.dart';
 import 'package:proxypin/network/components/manager/script_manager.dart';
 import 'package:proxypin/network/channel/host_port.dart';
 import 'package:proxypin/network/http/http.dart';
@@ -37,6 +38,7 @@ import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/ui/configuration.dart';
 import 'package:proxypin/ui/content/panel.dart';
 import 'package:proxypin/ui/desktop/request/repeat.dart';
+import 'package:proxypin/ui/desktop/setting/request_breakpoint.dart';
 import 'package:proxypin/ui/desktop/setting/request_map.dart';
 import 'package:proxypin/ui/desktop/setting/script.dart';
 import 'package:proxypin/ui/desktop/widgets/highlight.dart';
@@ -236,7 +238,6 @@ class _RequestWidgetState extends State<RequestWidget> {
 
   List<ContextMenuItem> _requestMenu() {
     return [
-      _menuAction(localizations.copyCurl, _RequestMenuAction.copyCurl),
       ContextMenuItem.submenu(label: localizations.copy, submenu: _copySubmenu()),
       ContextMenuItem.separator(),
       _menuAction(localizations.openNewWindow, _RequestMenuAction.openNewWindow),
@@ -250,6 +251,7 @@ class _RequestWidgetState extends State<RequestWidget> {
       _menuAction(localizations.requestRewrite, _RequestMenuAction.requestRewrite),
       _menuAction(localizations.requestMap, _RequestMenuAction.requestMap),
       _menuAction(localizations.script, _RequestMenuAction.script),
+      _menuAction(localizations.addToBreakpoint, _RequestMenuAction.breakpoint),
       ContextMenuItem.separator(),
       _menuAction(localizations.favorite, _RequestMenuAction.favorite),
       ContextMenuItem.submenu(label: localizations.highlight, submenu: highlightMenu()),
@@ -262,6 +264,7 @@ class _RequestWidgetState extends State<RequestWidget> {
 
   List<ContextMenuItem> _copySubmenu() {
     return [
+      _copyMenuAction(localizations.copyCurl, _RequestCopyMenuAction.copyCurl),
       _copyMenuAction(localizations.copyUrl, _RequestCopyMenuAction.copyUrl),
       _copyMenuAction(localizations.copyRawRequest, _RequestCopyMenuAction.rawRequest),
       _copyMenuAction(localizations.copyRequestResponse, _RequestCopyMenuAction.requestResponse),
@@ -296,9 +299,6 @@ class _RequestWidgetState extends State<RequestWidget> {
 
   Future<void> _onMenuAction(_RequestMenuAction action) async {
     switch (action) {
-      case _RequestMenuAction.copyCurl:
-        await _copyText(curlRequest(widget.request));
-        break;
       case _RequestMenuAction.openNewWindow:
         openDetailInNewWindow();
         break;
@@ -324,6 +324,19 @@ class _RequestWidgetState extends State<RequestWidget> {
         break;
       case _RequestMenuAction.script:
         await _openScriptDialog();
+        break;
+      case _RequestMenuAction.breakpoint:
+        var rule = RequestBreakpointRule(url: widget.request.requestUrl, method: widget.request.method);
+        var result = await showDialog<RequestBreakpointRule>(
+            context: context,
+            builder: (context) => InterceptRuleDialog(rule: rule, addMode: true));
+        if (result != null) {
+          var manager = await RequestBreakpointManager.instance;
+          manager.add(result);
+          if (mounted) {
+            FlutterToastr.show(localizations.operationSuccess, context, rootNavigator: true);
+          }
+        }
         break;
       case _RequestMenuAction.favorite:
         FavoriteStorage.addFavorite(widget.request);
@@ -352,6 +365,9 @@ class _RequestWidgetState extends State<RequestWidget> {
 
   Future<void> _onCopyMenuAction(_RequestCopyMenuAction action) async {
     switch (action) {
+      case _RequestCopyMenuAction.copyCurl:
+        await _copyText(curlRequest(widget.request));
+        break;
       case _RequestCopyMenuAction.copyUrl:
         await _copyText(widget.request.requestUrl);
         break;
@@ -585,7 +601,6 @@ class RequestSelectionHandlers {
 }
 
 enum _RequestMenuAction {
-  copyCurl,
   openNewWindow,
   repeat,
   customRepeat,
@@ -593,6 +608,7 @@ enum _RequestMenuAction {
   requestRewrite,
   requestMap,
   script,
+  breakpoint,
   favorite,
   select,
   delete,
@@ -602,6 +618,6 @@ enum _RequestMenuAction {
   batchCancel,
 }
 
-enum _RequestCopyMenuAction { copyUrl, rawRequest, requestResponse, pythonRequests, fetch }
+enum _RequestCopyMenuAction { copyCurl, copyUrl, rawRequest, requestResponse, pythonRequests, fetch }
 
 enum _RequestExportMenuAction { request, requestBody, response, responseBody, har }

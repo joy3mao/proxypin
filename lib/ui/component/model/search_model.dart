@@ -207,6 +207,12 @@ class SearchModel {
       return matches(request.requestUrl);
     }
 
+    if (option == Option.host) {
+      // 只针对 URL 中的域名/主机部分搜索
+      var host = request.hostAndPort?.host ?? Uri.tryParse(request.requestUrl)?.host;
+      return host != null && host.isNotEmpty && matches(host);
+    }
+
     if (option == Option.method) {
       return matches(request.method.name);
     }
@@ -252,6 +258,7 @@ class SearchModel {
 
 enum Option {
   url,
+  host,
   method,
   responseContentType,
   requestHeader,

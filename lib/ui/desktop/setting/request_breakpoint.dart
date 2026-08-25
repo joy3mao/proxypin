@@ -361,7 +361,10 @@ class _RequestBreakpointPageState extends State<RequestBreakpointPage> {
 class InterceptRuleDialog extends StatefulWidget {
   final RequestBreakpointRule? rule;
 
-  const InterceptRuleDialog({super.key, this.rule});
+  /// 强制以「添加」标题展示（用于右键菜单预填新建场景）
+  final bool addMode;
+
+  const InterceptRuleDialog({super.key, this.rule, this.addMode = false});
 
   @override
   State<InterceptRuleDialog> createState() => _InterceptRuleDialogState();
@@ -405,7 +408,7 @@ class _InterceptRuleDialogState extends State<InterceptRuleDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       title: Text(
-          widget.rule == null
+          widget.rule == null || widget.addMode
               ? "${localizations.add} ${localizations.breakpointRule}"
               : "${localizations.edit} ${localizations.breakpointRule}",
           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500)),

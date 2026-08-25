@@ -15,6 +15,9 @@ class AppLocalizationsId extends AppLocalizations {
   String get breakpointRule => 'Aturan breakpoint';
 
   @override
+  String get addToBreakpoint => 'Tambahkan ke breakpoint';
+
+  @override
   String get name => 'Nama';
 
   @override
@@ -130,6 +133,12 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get themeDark => 'Gelap';
+
+  @override
+  String get fontSize => 'Skala font';
+
+  @override
+  String get fontSizeSubtitle => 'Sesuaikan skala font, ukuran font dan jarak antar elemen UI akan berubah sesuai';
 
   @override
   String get language => 'Bahasa';
@@ -538,6 +547,9 @@ class AppLocalizationsId extends AppLocalizations {
 
   @override
   String get search => 'Cari';
+
+  @override
+  String get requestFilter => 'Filter permintaan';
 
   @override
   String get clearSearch => 'Clear Search';

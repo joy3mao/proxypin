@@ -15,6 +15,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get breakpointRule => 'Regla de punto de interrupción';
 
   @override
+  String get addToBreakpoint => 'Agregar al punto de interrupción';
+
+  @override
   String get name => 'Nombre';
 
   @override
@@ -130,6 +133,13 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get themeDark => 'Oscuro';
+
+  @override
+  String get fontSize => 'Escala de fuente';
+
+  @override
+  String get fontSizeSubtitle =>
+      'Ajusta la escala de la fuente, el tamaño de fuente y el espaciado de los elementos de la interfaz cambiarán en consecuencia';
 
   @override
   String get language => 'Idioma';
@@ -538,6 +548,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get search => 'Buscar';
+
+  @override
+  String get requestFilter => 'Filtro de solicitudes';
 
   @override
   String get clearSearch => 'Clear Search';

@@ -15,6 +15,9 @@ class AppLocalizationsTh extends AppLocalizations {
   String get breakpointRule => 'กฎจุดหยุด';
 
   @override
+  String get addToBreakpoint => 'เพิ่มไปยังจุดหยุด';
+
+  @override
   String get name => 'ชื่อ';
 
   @override
@@ -130,6 +133,12 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get themeDark => 'มืด';
+
+  @override
+  String get fontSize => 'สเกลตัวอักษร';
+
+  @override
+  String get fontSizeSubtitle => 'ปรับสเกลตัวอักษร ขนาดตัวอักษรและระยะห่างขององค์ประกอบ UI จะเปลี่ยนตามไปด้วย';
 
   @override
   String get language => 'ภาษา';
@@ -538,6 +547,9 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get search => 'ค้นหา';
+
+  @override
+  String get requestFilter => 'ตัวกรองคำขอ';
 
   @override
   String get clearSearch => 'Clear Search';

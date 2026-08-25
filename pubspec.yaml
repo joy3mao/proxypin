@@ -55,6 +55,11 @@ dev_dependencies:
 flutter:
   generate: true
   uses-material-design: true
+  # code_forge 的 macOS SPM 集成不构建 Rust 动态库（cargokit 只挂在 podspec 里），
+  # 关闭 Swift Package Manager 让所有插件走 CocoaPods，RustLib.init() 才能加载成功。
+  # 参考: https://github.com/heckmon/code_forge/issues/94
+  config:
+    enable-swift-package-manager: false
   assets:
     - assets/certs/ca.crt
     - assets/certs/ca_key.pem

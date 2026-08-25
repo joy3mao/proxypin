@@ -1,6 +1,7 @@
 {
   "breakpoint": "Breakpoint",
   "breakpointRule": "Breakpoint Rule",
+  "addToBreakpoint": "Add to Breakpoint",
   "name": "Name",
   "requests": "Requests",
   "favorites": "Favorites",
@@ -42,6 +43,8 @@
   "themeColor": "Theme Color",
   "themeLight": "Light",
   "themeDark": "Dark",
+  "fontSize": "Font Scale",
+  "fontSizeSubtitle": "Adjust the font scale, the font size and spacing of UI elements will change accordingly",
   "language": "Language",
   "autoStartup": "Auto Start Recording Traffic",
   "autoStartupDescribe": "Automatically start recording traffic when the program starts",
@@ -182,6 +185,7 @@
   "timeAsc": "Ascending by time",
 
   "search": "Search",
+  "requestFilter": "Request Filter",
   "clearSearch": "Clear Search",
   "requestType": "Request type",
   "keyword": "Keyword",

@@ -271,7 +271,8 @@ class DomainWidgetState extends State<DomainList> with AutomaticKeepAliveClientM
     if (searchModel?.isNotEmpty == true && searchModel?.filter(pathRow.request, response) == true) {
       var requests = searchView[domain];
       if (requests?.getRequest(response) == null) {
-        requests?.addRequest(response.requestId, pathRow.request, sortDesc);
+        // 用 request.requestId 作为 key，与 RequestWidget 的 ValueKey 保持一致
+        requests?.addRequest(pathRow.request.requestId, pathRow.request, sortDesc);
       }
       requests?.getRequest(response)?.setResponse(response);
     }
@@ -479,6 +480,11 @@ class DomainRequests extends StatefulWidget {
         proxyServer: proxyServer);
     if (body != null) {
       headerBody.body.addAll(body);
+      // 同步 requestMap，否则搜索视图的 getRequest/addRequest 会因查不到
+      // 记录而重复添加同一个请求，导致 Column 出现重复 key 崩溃
+      for (var requestWidget in headerBody.body) {
+        headerBody.requestMap[requestWidget.request.requestId] = requestWidget;
+      }
     }
     return headerBody;
   }

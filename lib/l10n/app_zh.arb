@@ -2,6 +2,7 @@
 
   "breakpoint": "断点",
   "breakpointRule": "断点规则",
+  "addToBreakpoint": "添加到断点",
   "name": "名称",
   "requests": "抓包",
   "favorites": "收藏",
@@ -43,6 +44,8 @@
   "followSystem": "跟随系统",
   "themeLight": "浅色",
   "themeDark": "深色",
+  "fontSize": "字体缩放",
+  "fontSizeSubtitle": "调整字体缩放比例，界面元素的字体与间距会随之变化",
   "language": "语言",
   "autoStartup": "自动开启抓包",
   "autoStartupDescribe": "程序启动时自动开始记录流量",
@@ -183,6 +186,7 @@
   "timeAsc": "按时间升序",
 
   "search": "搜索",
+  "requestFilter": "请求过滤",
   "clearSearch": "清除搜索",
   "requestType": "请求类型",
   "keyword": "关键词",

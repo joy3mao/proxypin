@@ -15,6 +15,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get breakpointRule => 'Breakpoint Rule';
 
   @override
+  String get addToBreakpoint => 'Add to Breakpoint';
+
+  @override
   String get name => 'Name';
 
   @override
@@ -130,6 +133,13 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get themeDark => 'Dark';
+
+  @override
+  String get fontSize => 'Font Scale';
+
+  @override
+  String get fontSizeSubtitle =>
+      'Adjust the font scale, the font size and spacing of UI elements will change accordingly';
 
   @override
   String get language => 'Português';
@@ -538,6 +548,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get search => 'Search';
+
+  @override
+  String get requestFilter => 'Request Filter';
 
   @override
   String get clearSearch => 'Clear Search';
@@ -1235,6 +1248,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
   String get breakpointRule => 'Regra de ponto de interrupção';
 
   @override
+  String get addToBreakpoint => 'Adicionar ao ponto de interrupção';
+
+  @override
   String get name => 'Nome';
 
   @override
@@ -1344,6 +1360,13 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get themeDark => 'Escuro';
+
+  @override
+  String get fontSize => 'Escala da fonte';
+
+  @override
+  String get fontSizeSubtitle =>
+      'Ajuste a escala da fonte, o tamanho da fonte e o espaçamento dos elementos da interface mudarão de acordo';
 
   @override
   String get language => 'Idioma';
@@ -1654,6 +1677,9 @@ class AppLocalizationsPtBr extends AppLocalizationsPt {
 
   @override
   String get search => 'Buscar';
+
+  @override
+  String get requestFilter => 'Filtro de requisições';
 
   @override
   String get keyword => 'Palavra-chave';

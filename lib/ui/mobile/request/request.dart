@@ -21,6 +21,7 @@ import 'package:flutter/services.dart';
 import 'package:proxypin/l10n/app_localizations.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
 import 'package:proxypin/network/bin/server.dart';
+import 'package:proxypin/network/components/manager/request_breakpoint_manager.dart';
 import 'package:proxypin/network/components/manager/request_rewrite_manager.dart';
 import 'package:proxypin/network/components/manager/rewrite_rule.dart';
 import 'package:proxypin/network/components/manager/script_manager.dart';
@@ -37,6 +38,8 @@ import 'package:proxypin/ui/content/panel.dart';
 import 'package:proxypin/ui/desktop/request/request.dart';
 import 'package:proxypin/ui/mobile/request/repeat.dart';
 import 'package:proxypin/ui/mobile/request/request_editor.dart';
+import 'package:proxypin/ui/mobile/setting/request_breakpoint.dart';
+import 'package:proxypin/ui/mobile/setting/request_map.dart';
 import 'package:proxypin/ui/mobile/setting/request_rewrite.dart';
 import 'package:proxypin/ui/mobile/setting/script.dart';
 import 'package:proxypin/utils/curl.dart';
@@ -391,6 +394,38 @@ class RequestRowState extends State<RequestRow> {
                           },
                           label: localizations.requestRewrite,
                           icon: Icons.edit_outlined),
+                    ),
+                    //breakpoint and request map
+                    menuItem(
+                      left: itemButton(
+                          onPressed: () async {
+                            Navigator.maybePop(availableContext);
+
+                            var rule = RequestBreakpointRule(url: request.requestUrl, method: request.method);
+                            var result = await Navigator.push<RequestBreakpointRule>(
+                                getContext(),
+                                MaterialPageRoute(
+                                    builder: (context) =>
+                                        MobileBreakpointRuleEditor(rule: rule, addMode: true)));
+                            if (result != null) {
+                              var manager = await RequestBreakpointManager.instance;
+                              manager.add(result);
+                              FlutterToastr.show(localizations.addSuccess, getContext());
+                            }
+                          },
+                          label: localizations.addToBreakpoint,
+                          icon: Icons.play_circle_outline),
+                      right: itemButton(
+                          onPressed: () {
+                            Navigator.maybePop(availableContext);
+
+                            var pageRoute = MaterialPageRoute(
+                                builder: (context) => MobileRequestMapEdit(
+                                    url: request.domainPath, title: request.hostAndPort?.host));
+                            Navigator.push(getContext(), pageRoute);
+                          },
+                          label: localizations.requestMap,
+                          icon: Icons.map_outlined),
                     ),
                     menuItem(
                       left: itemButton(

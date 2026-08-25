@@ -99,6 +99,8 @@ class FluentApp extends StatelessWidget {
     return ValueListenableBuilder<bool>(
         valueListenable: appConfiguration.globalChange,
         builder: (_, current, __) {
+          //全局字体缩放:作用于所有 Text(包括硬编码 fontSize 的样式)
+          double fontScale = appConfiguration.fontScale;
           return MaterialApp(
             title: 'ProxyPin',
             debugShowCheckedModeBanner: false,
@@ -109,6 +111,9 @@ class FluentApp extends StatelessWidget {
             locale: appConfiguration.language,
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
+            builder: (context, child) => MediaQuery(
+                data: MediaQuery.of(context).copyWith(textScaler: TextScaler.linear(fontScale)),
+                child: child!),
             home: home,
           );
         });
@@ -117,6 +122,10 @@ class FluentApp extends StatelessWidget {
   ThemeData theme(Brightness brightness) {
     bool useMaterial3 = appConfiguration.useMaterial3;
     bool isDark = brightness == Brightness.dark;
+
+    //字体缩放比例(1.0 为默认),所有文字与 UI 间距随之联动
+    double fontScale = appConfiguration.fontScale;
+    double factor = fontScale;
 
     Color? themeColor = isDark ? appConfiguration.themeColor : appConfiguration.themeColor;
     Color? cardColor = isDark ? Color(0XFF3C3C3C) : Colors.white;
@@ -138,8 +147,14 @@ class FluentApp extends StatelessWidget {
       surfaceContainerHigh: surfaceContainer,
     );
 
-    var themeData =
-        ThemeData(brightness: brightness, useMaterial3: appConfiguration.useMaterial3, colorScheme: colorScheme);
+    var themeData = ThemeData(
+        brightness: brightness,
+        useMaterial3: appConfiguration.useMaterial3,
+        colorScheme: colorScheme,
+        //字体越大控件间距越宽松,字体越小越紧凑(系数12,0.5倍时到达最紧-4)
+        visualDensity: VisualDensity(
+            horizontal: ((factor - 1) * 12).clamp(-4.0, 4.0).toDouble(),
+            vertical: ((factor - 1) * 12).clamp(-4.0, 4.0).toDouble()));
 
     if (!appConfiguration.useMaterial3) {
       themeData = themeData.copyWith(
@@ -159,6 +174,48 @@ class FluentApp extends StatelessWidget {
 
     if (Platform.isWindows) {
       themeData = themeData.useSystemChineseFont();
+    }
+
+    //字体缩放由 MaterialApp.builder 中的 MediaQuery.textScaler 统一处理(覆盖硬编码 fontSize),
+    //此处不再缩放 textTheme,避免双重缩放
+
+    //字体缩小时收紧控件间距
+    if (fontScale < 1.0) {
+      themeData = themeData.copyWith(materialTapTargetSize: MaterialTapTargetSize.shrinkWrap);
+
+      // 紧凑系数:0.5倍→0.5(最紧),0.75倍→0.25,1.0→0
+      final c = (1.0 - fontScale).clamp(0.0, 0.5);
+      themeData = themeData.copyWith(
+        // 列表项:更小内边距,垂直更紧凑
+        listTileTheme: themeData.listTileTheme.copyWith(
+          dense: true,
+          contentPadding: EdgeInsets.symmetric(horizontal: 16 - 8 * c, vertical: 8 - 6 * c),
+          minVerticalPadding: 4 - 2 * c,
+        ),
+        // 卡片:更小外边距
+        cardTheme: themeData.cardTheme.copyWith(margin: EdgeInsets.all(6 - 3 * c)),
+        // 顶部栏:更低高度
+        appBarTheme: themeData.appBarTheme.copyWith(toolbarHeight: 56 - 12 * c),
+        // 标签页:更小内边距
+        tabBarTheme: themeData.tabBarTheme.copyWith(
+          labelPadding: EdgeInsets.symmetric(horizontal: 16 - 8 * c, vertical: 8 - 4 * c),
+        ),
+        // 输入框:更紧凑
+        inputDecorationTheme: themeData.inputDecorationTheme.copyWith(
+          isDense: true,
+          contentPadding: EdgeInsets.symmetric(horizontal: 12 - 4 * c, vertical: 12 - 6 * c),
+        ),
+        // 按钮:更小内边距
+        buttonTheme: themeData.buttonTheme.copyWith(
+          padding: EdgeInsets.symmetric(horizontal: 16 - 8 * c, vertical: 8 - 4 * c),
+        ),
+        // 标签/筛选项:更紧凑
+        chipTheme: themeData.chipTheme.copyWith(
+          padding: EdgeInsets.symmetric(horizontal: 8 - 4 * c, vertical: 4 - 2 * c),
+        ),
+        // 分隔线:更小留白
+        dividerTheme: themeData.dividerTheme.copyWith(space: 16 - 8 * c),
+      );
     }
 
     return themeData.copyWith(

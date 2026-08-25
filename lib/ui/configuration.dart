@@ -94,6 +94,18 @@ class AppConfiguration {
   /// 清空抓包前确认
   bool clearConfirm = false;
 
+  /// 字体缩放比例(1.0 为默认,范围 0.5~1.5)
+  double _fontScale = 1.0;
+
+  double get fontScale => _fontScale;
+
+  set fontScale(double value) {
+    value = value.clamp(0.5, 1.5).toDouble();
+    if (value == _fontScale) return;
+    _fontScale = value;
+    globalChange.value = !globalChange.value;
+  }
+
   //桌面window大小
   Size? windowSize;
 
@@ -213,6 +225,7 @@ class AppConfiguration {
       memoryCleanupThreshold = config['memoryCleanupThreshold'];
       autoReadEnabled = config['autoReadEnabled'] ?? true;
       clearConfirm = config['clearConfirm'] ?? false;
+      fontScale = config['fontScale'] ?? 1.0;
 
       windowSize =
           config['windowSize'] == null ? null : Size(config['windowSize']['width'], config['windowSize']['height']);
@@ -258,6 +271,7 @@ class AppConfiguration {
       "headerViewMode": headerViewMode,
       "autoReadEnabled": autoReadEnabled,
       "clearConfirm": clearConfirm,
+      'fontScale': fontScale,
       if (memoryCleanupThreshold != null) 'memoryCleanupThreshold': memoryCleanupThreshold,
       if (Platforms.isMobile()) 'pipEnabled': pipEnabled.value,
       if (Platforms.isMobile()) 'pipIcon': pipIcon.value ? true : null,

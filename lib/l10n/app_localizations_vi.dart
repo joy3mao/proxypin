@@ -15,6 +15,9 @@ class AppLocalizationsVi extends AppLocalizations {
   String get breakpointRule => 'Quy tắc điểm ngắt';
 
   @override
+  String get addToBreakpoint => 'Thêm vào điểm ngắt';
+
+  @override
   String get name => 'Tên';
 
   @override
@@ -130,6 +133,13 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get themeDark => 'Tối';
+
+  @override
+  String get fontSize => 'Tỷ lệ chữ';
+
+  @override
+  String get fontSizeSubtitle =>
+      'Điều chỉnh tỷ lệ chữ, cỡ chữ và khoảng cách giữa các thành phần giao diện sẽ thay đổi tương ứng';
 
   @override
   String get language => 'Ngôn ngữ';
@@ -538,6 +548,9 @@ class AppLocalizationsVi extends AppLocalizations {
 
   @override
   String get search => 'Tìm kiếm';
+
+  @override
+  String get requestFilter => 'Lọc yêu cầu';
 
   @override
   String get clearSearch => 'Clear Search';

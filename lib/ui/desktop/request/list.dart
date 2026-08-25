@@ -13,6 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_toastr/flutter_toastr.dart';
@@ -25,6 +27,7 @@ import 'package:proxypin/network/channel/host_port.dart';
 import 'package:proxypin/network/http/http.dart';
 import 'package:proxypin/network/http/http_client.dart';
 import 'package:proxypin/ui/component/multi_select_controller.dart';
+import 'package:proxypin/ui/component/search_condition.dart';
 import 'package:proxypin/ui/component/selection_action_bar.dart';
 import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/component/widgets.dart';
@@ -64,6 +67,9 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
   ListenableList<HttpRequest> container = ListenableList();
 
   bool sortDesc = true;
+
+  //请求过滤条件：不满足条件的请求直接丢弃，不保留到内存中
+  SearchModel? filterModel;
 
   // 选择控制器
   final MultiSelectController selectionController = MultiSelectController();
@@ -189,6 +195,11 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
           return <PopupMenuEntry<_RequestListMenuAction>>[
             _menuItem(_RequestListMenuAction.search,
                 icon: const Icon(Icons.search, size: 17), text: localizations.search),
+            _menuItem(_RequestListMenuAction.filter,
+                icon: Icon(Icons.filter_alt_outlined,
+                    size: 16,
+                    color: filterModel?.isNotEmpty == true ? Theme.of(context).colorScheme.primary : null),
+                text: localizations.requestFilter),
             _menuItem(_RequestListMenuAction.export,
                 icon: const Icon(Icons.share, size: 16), text: localizations.viewExport),
             _menuItem(_RequestListMenuAction.repeat,
@@ -215,6 +226,9 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
       case _RequestListMenuAction.search:
         searchKey.currentState?.searchDialog();
         break;
+      case _RequestListMenuAction.filter:
+        showFilterDialog();
+        break;
       case _RequestListMenuAction.export:
         export('ProxyPin_${DateTime.now().dateFormat()}.har');
         break;
@@ -239,6 +253,10 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
 
   ///添加请求
   void add(Channel channel, HttpRequest request) {
+    // 请求过滤：响应未知时先按不依赖响应的条件判断，不满足则直接丢弃，不保留到内存
+    if (filterModel?.isNotEmpty == true && !_passRequestFilter(filterModel!, request)) {
+      return;
+    }
     container.add(request);
     domainListKey.currentState?.add(channel, request);
     requestSequenceKey.currentState?.add(request);
@@ -246,6 +264,16 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
 
   ///添加响应
   void addResponse(ChannelContext channelContext, HttpResponse response) {
+    final request = response.request;
+    // 请求已被过滤丢弃（不在内存列表中），忽略其响应
+    if (request != null && !container.contains(request)) {
+      return;
+    }
+    // 响应到达后按完整条件重新判断，不满足则从内存中删除（与内存清理丢弃逻辑一致）
+    if (filterModel?.isNotEmpty == true && request != null && !filterModel!.filter(request, response)) {
+      remove([request]);
+      return;
+    }
     domainListKey.currentState?.addResponse(channelContext, response);
     requestSequenceKey.currentState?.addResponse(response);
   }
@@ -276,6 +304,71 @@ class DesktopRequestListState extends State<DesktopRequestListWidget> with Autom
   void search(SearchModel searchModel) {
     domainListKey.currentState?.search(searchModel);
     requestSequenceKey.currentState?.search(searchModel);
+  }
+
+  ///请求过滤设置弹窗（模仿搜索弹窗，只显示关键词、搜索范围、响应类型）
+  void showFilterDialog() {
+    var model = filterModel?.clone() ?? SearchModel();
+    if (filterModel == null) {
+      model.searchOptions = {Option.url};
+    }
+    bool isCN = AppLocalizations.of(context)!.localeName == 'zh';
+    var height = MediaQuery.of(context).size.height;
+    // 过滤面板比搜索面板矮，位置相应上移
+    height = !isCN ? height - 330 : height - 300;
+    if (Platform.isMacOS) {
+      height -= 30;
+    }
+    showMenu(
+        context: context,
+        position: RelativeRect.fromLTRB(65, height, 65, height),
+        constraints: const BoxConstraints(minWidth: 260, maxWidth: 330),
+        items: [
+          PopupMenuItem(
+              padding: const EdgeInsets.only(left: 15, right: 15, top: 10, bottom: 5),
+              enabled: false,
+              child: DefaultTextStyle.merge(
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontSize: 14),
+                  child: SizedBox(
+                      child: SearchConditions(
+                          filterMode: true,
+                          searchModel: model,
+                          onSearch: (val) {
+                            applyFilter(val);
+                          }))))
+        ]);
+  }
+
+  ///应用请求过滤：设置过滤条件，并删除当前不满足条件的请求
+  void applyFilter(SearchModel model) {
+    setState(() {
+      filterModel = model.isNotEmpty ? model : null;
+    });
+
+    if (filterModel == null) {
+      return; // 清除过滤，保留现有请求
+    }
+
+    // 删除当前不满足过滤条件的请求，与内存清理的丢弃逻辑一致
+    final toRemove = container.where((r) => !filterModel!.filter(r, r.response)).toList();
+    if (toRemove.isNotEmpty) {
+      remove(toRemove);
+    }
+  }
+
+  ///响应未知（onRequest 阶段）时判断请求是否明确不满足过滤条件。
+  ///依赖响应的条件（响应类型、响应头/响应体搜索范围）暂时无法判断，先放行，
+  ///等 addResponse 时再按完整条件判断。
+  bool _passRequestFilter(SearchModel model, HttpRequest request) {
+    if (model.isEmpty) {
+      return true;
+    }
+    // 复制一份模型，去掉依赖响应的条件
+    final onRequestModel = model.clone();
+    onRequestModel.responseContentType = null;
+    onRequestModel.searchOptions.remove(Option.responseHeader);
+    onRequestModel.searchOptions.remove(Option.responseBody);
+    return onRequestModel.filter(request, null);
   }
 
   List<HttpRequest>? currentView() {
@@ -399,4 +492,4 @@ class _ClearSelectionIntent extends Intent {
   const _ClearSelectionIntent();
 }
 
-enum _RequestListMenuAction { search, export, repeat, select, sort, report }
+enum _RequestListMenuAction { search, filter, export, repeat, select, sort, report }

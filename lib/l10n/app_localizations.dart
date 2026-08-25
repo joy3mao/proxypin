@@ -118,6 +118,12 @@ abstract class AppLocalizations {
   /// **'Breakpoint Rule'**
   String get breakpointRule;
 
+  /// No description provided for @addToBreakpoint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to Breakpoint'**
+  String get addToBreakpoint;
+
   /// No description provided for @name.
   ///
   /// In en, this message translates to:
@@ -351,6 +357,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Dark'**
   String get themeDark;
+
+  /// No description provided for @fontSize.
+  ///
+  /// In en, this message translates to:
+  /// **'Font Scale'**
+  String get fontSize;
+
+  /// No description provided for @fontSizeSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Adjust the font scale, the font size and spacing of UI elements will change accordingly'**
+  String get fontSizeSubtitle;
 
   /// No description provided for @language.
   ///
@@ -1155,6 +1173,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Search'**
   String get search;
+
+  /// No description provided for @requestFilter.
+  ///
+  /// In en, this message translates to:
+  /// **'Request Filter'**
+  String get requestFilter;
 
   /// No description provided for @clearSearch.
   ///
