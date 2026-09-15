@@ -1,5 +1,13 @@
 output: dist/
 
+# 统一产物命名，例如:
+#   macOS:   ProxyPin-1.3.1-macos.dmg
+#   Windows: ProxyPin-1.3.1-windows.zip / .exe / .msix
+# 可用变量: {{name}} {{build_name}} {{build_number}} {{version}} {{build_mode}} {{platform}} {{ext}}
+# 注意: 仅 `flutter_distributor release` 会读取此配置;
+#       `flutter_distributor package` 子命令需用 --artifact-name 显式指定。
+artifact_name: "ProxyPin-{{build_name}}-{{platform}}.{{ext}}"
+
 releases:
   - name: release
     jobs:
@@ -7,15 +15,11 @@ releases:
         package:
           platform: macos
           target: dmg
-          build_args:
-            profile: true
 
       - name: windows-exe
         package:
           platform: windows
           target: exe
-          build_args:
-            profile: true
 
       - name: windows-msix
         package:
