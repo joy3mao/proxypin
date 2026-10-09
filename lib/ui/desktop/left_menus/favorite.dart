@@ -36,6 +36,7 @@ import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/ui/content/panel.dart';
 import 'package:proxypin/ui/desktop/request/repeat.dart';
+import 'package:proxypin/utils/replay_task.dart';
 import 'package:proxypin/utils/curl.dart';
 import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/platform.dart';
@@ -224,7 +225,10 @@ class _FavoriteItemState extends State<_FavoriteItem> {
     showDialog(
         context: context,
         builder: (BuildContext context) {
-          return CustomRepeatDialog(onRepeat: () => onRepeat(request), prefs: prefs);
+          return CustomRepeatDialog(
+              onScheduled: (cfg) =>
+                  ReplayTaskManager.instance.start(request: request, action: () => onRepeat(request), config: cfg),
+              prefs: prefs);
         });
   }
 
@@ -371,9 +375,8 @@ class _FavoritesActions extends StatelessWidget {
                   constraints: const BoxConstraints(minWidth: 34, minHeight: 34),
                   icon: const Icon(Icons.download_for_offline_outlined, size: 18),
                   onPressed: () async {
-                    final result =
-                        await FilePicker.pickFiles(type: FileType.custom, allowedExtensions: ['json', 'har']);
-                    final file = result?.files.isNotEmpty == true ? result!.files.first : null;
+                    final file = await FilePicker.pickFile(
+                        type: FileType.custom, allowedExtensions: ['json', 'har']);
                     if (file?.path == null) return;
 
                     try {

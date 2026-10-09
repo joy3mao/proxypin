@@ -54,6 +54,8 @@
   "done": "Listo",
   "download": "Descargar",
   "edit": "Editar",
+  "moveUp": "Subir",
+  "moveDown": "Bajar",
   "editReportServer": "Editar servidor de informes",
   "editRequest": "Editar y enviar",
   "emptyData": "Sin datos",
@@ -246,7 +248,6 @@
   "view": "Ver",
   "cipher": "Cifrado",
   "other": "Otros",
-
   "environment": "Entorno",
   "environmentVariables": "Variables de entorno",
   "envGlobal": "Global",
@@ -255,11 +256,10 @@
   "envDeleteConfirm": "¿Eliminar este entorno?",
   "envEmptyHint": "Sin variables. Pulsa + para añadir.",
   "envUsageHint": "Usa %s en reglas o lee/escribe context.env en scripts.",
-
+  "envInsertBuiltIn": "Insert built-in variable",
   "weakNetwork": "Limitación de red",
   "weakNetworkPreset": "Preajuste",
   "weakNetworkPresetOffline": "Sin conexión",
-
   "weakNetworkPresetSlow": "Lento",
   "weakNetworkPresetWeak": "Débil",
   "weakNetworkLatency": "Latencia",
@@ -267,5 +267,12 @@
   "weakNetworkDownload": "Bajada",
   "weakNetworkBandwidth": "Ancho de banda",
   "weakNetworkLossRate": "Pérdida de paquetes",
-  "weakNetworkRules": "Reglas URL"
+  "weakNetworkRules": "Reglas URL",
+  "replayTasks": "Tareas de repetición",
+  "clearFinished": "Borrar finalizadas",
+  "statusWaiting": "En espera",
+  "statusCancelled": "Cancelado",
+  "statusPaused": "En pausa",
+  "pause": "Pausar",
+  "resume": "Reanudar"
 }

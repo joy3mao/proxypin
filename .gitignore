@@ -55,3 +55,4 @@ pubspec.lock
 # CocoaPods generated
 macos/Pods/
 ios/Pods/
+.claude/

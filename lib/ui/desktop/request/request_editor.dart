@@ -33,7 +33,7 @@ import 'package:proxypin/network/http/http_headers.dart';
 import 'package:proxypin/network/http/http_client.dart';
 import 'package:proxypin/network/util/logger.dart';
 import 'package:proxypin/ui/component/env_var_highlight.dart';
-import 'package:proxypin/ui/component/multipart_form_editor.dart';
+import 'package:proxypin/ui/component/form_body_editor.dart';
 import 'package:proxypin/ui/component/search/finder.dart';
 import 'package:proxypin/ui/component/split_view.dart';
 import 'package:proxypin/ui/component/state_component.dart';
@@ -41,8 +41,9 @@ import 'package:proxypin/ui/configuration.dart';
 import 'package:proxypin/ui/content/body.dart';
 import 'package:proxypin/utils/curl.dart';
 import 'package:proxypin/utils/highlight_languages.dart';
-import 'package:proxypin/utils/lang.dart';
+import 'package:proxypin/utils/form_url.dart';
 import 'package:proxypin/utils/multipart.dart';
+import 'package:proxypin/utils/lang.dart';
 import 'package:proxypin/utils/xml_formatter.dart';
 
 import '../../component/http_method_popup.dart';
@@ -255,15 +256,15 @@ class RequestEditorState extends State<RequestEditor> {
   ///发送请求
   Future<void> sendRequest() async {
     var currentState = requestLineKey.currentState!;
-    var bodyState = requestKey.currentState;
-    var headers = bodyState?.getHeaders();
-    var requestBody = bodyState == null ? null : await bodyState.getBodyBytes(_renderEnv);
+    // 先取 body：multipart 构建时会把带 boundary 的 Content-Type 写回 header 行
+    var bodyBytes = requestKey.currentState?.getBodyBytes();
+    var headers = requestKey.currentState?.getHeaders();
     String url = _renderEnv(currentState.requestUrl.text);
     _renderHeadersInPlace(headers);
     HttpRequest request = HttpRequest(currentState.requestMethod, Uri.parse(url).toString(),
         protocolVersion: this.request?.protocolVersion ?? "HTTP/1.1");
     request.headers.addAll(headers);
-    request.body = requestBody;
+    request.body = bodyBytes;
 
     responseKey.currentState?.change(null);
     responseChange.value = 0;
@@ -283,13 +284,12 @@ class RequestEditorState extends State<RequestEditor> {
     });
   }
 
-  Future<void> executeBreakpoint() async {
+  void executeBreakpoint() {
     executed = true;
     if (widget.source == RequestEditorSource.breakpointRequest) {
       var currentState = requestLineKey.currentState!;
-      var bodyState = requestKey.currentState;
-      var headers = bodyState?.getHeaders();
-      var requestBody = bodyState == null ? null : await bodyState.getBodyBytes(_renderEnv);
+      var bodyBytes = requestKey.currentState?.getBodyBytes();
+      var headers = requestKey.currentState?.getHeaders();
       String url = _renderEnv(currentState.requestUrl.text);
       _renderHeadersInPlace(headers);
 
@@ -298,18 +298,18 @@ class RequestEditorState extends State<RequestEditor> {
       newRequest.method = currentState.requestMethod;
       newRequest.headers.clear();
       newRequest.headers.addAll(headers);
-      newRequest.body = requestBody;
+      newRequest.body = bodyBytes;
       widget.onExecuteRequest?.call(newRequest);
     } else if (widget.source == RequestEditorSource.breakpointResponse) {
+      var bodyBytes = responseKey.currentState?.getBodyBytes();
       var headers = responseKey.currentState?.getHeaders();
-      var responseBody = responseKey.currentState?.getBody();
       _renderHeadersInPlace(headers);
 
       if (response == null) return;
       HttpResponse newResponse = response!.copy();
       newResponse.headers.clear();
       newResponse.headers.addAll(headers);
-      newResponse.body = responseBody == null ? null : utf8.encode(_renderEnv(responseBody));
+      newResponse.body = bodyBytes;
       widget.onExecuteResponse?.call(newResponse);
     }
   }
@@ -401,7 +401,6 @@ class _HttpWidget extends StatefulWidget {
 /// 请求 Body 编辑器的数据类型选项。
 /// - NONE 表示请求不带 body（编辑器隐藏，发送时 body=null，并删除 Content-Type 头）。
 /// - RAW 表示无高亮且不修改 Content-Type；
-/// - FILE 表示 multipart/form-data 表单，可配置多个「参数名=参数值」和「参数名=@文件」；
 /// - 其余项对应一个 [ContentType]，用户手动切换时会写入 Content-Type 请求头。
 enum _BodyLanguage {
   none,
@@ -411,7 +410,6 @@ enum _BodyLanguage {
   xml,
   formUrl,
   formData,
-  file,
 }
 
 class _HttpState extends State<_HttpWidget> {
@@ -424,7 +422,6 @@ class _HttpState extends State<_HttpWidget> {
     _BodyLanguage.xml: 'XML',
     _BodyLanguage.formUrl: 'FORM-URL',
     _BodyLanguage.formData: 'FORM-DATA',
-    _BodyLanguage.file: 'FILE',
   };
 
   /// _BodyLanguage 与 ContentType 的对应关系；RAW 没有对应项
@@ -434,74 +431,56 @@ class _HttpState extends State<_HttpWidget> {
     _BodyLanguage.xml: ContentType.xml,
     _BodyLanguage.formUrl: ContentType.formUrl,
     _BodyLanguage.formData: ContentType.formData,
-    _BodyLanguage.file: ContentType.formData,
   };
 
   /// 用户手动切换数据类型时，写入 Content-Type 请求头使用的 MIME 主类型。
-  /// FILE / FORM-DATA 由于需要 boundary 参数才合法，单独处理。
+  /// FORM-DATA 由于需要 boundary 参数才合法，单独处理。
   static const Map<_BodyLanguage, String> _bodyLanguageMime = {
     _BodyLanguage.text: 'text/plain',
     _BodyLanguage.json: 'application/json',
     _BodyLanguage.xml: 'application/xml',
     _BodyLanguage.formUrl: 'application/x-www-form-urlencoded',
     _BodyLanguage.formData: 'multipart/form-data',
-    _BodyLanguage.file: 'multipart/form-data',
   };
 
   List<String> tabs = ['Header', 'Body'];
   final headerKey = GlobalKey<KeyValState>();
-  final multipartKey = GlobalKey<MultipartFormEditorState>();
   Map<String, List<String>> initHeader = {};
   HttpMessage? message;
   CodeForgeController? body;
+
+  /// FORM-DATA / FORM-URL 表单数据与 multipart boundary
+  FormBody formData = FormBody();
+  String _boundary = Multipart.newBoundary();
+  final formEditorKey = GlobalKey<FormBodyEditorState>();
 
   /// 当前编辑器使用的语言；初始化时按 Content-Type 推导
   _BodyLanguage _bodyLanguage = _BodyLanguage.none;
   bool _bodyWrap = true;
 
-  /// multipart/form-data 使用的 boundary；随机生成后固定复用，保证 Content-Type 头与 body 一致
-  String? _fileBoundary;
-
-  String get _boundary => _fileBoundary ??= MultipartFormBuilder.generateBoundary();
-
   AppLocalizations get localizations => AppLocalizations.of(context)!;
 
-  /// FILE 只用于构造上传请求，响应体不支持
-  bool get _supportFileType => widget.message is! HttpResponse;
-
-  List<_BodyLanguage> get _bodyLanguageOptions => _supportFileType
-      ? _BodyLanguage.values
-      : _BodyLanguage.values.where((e) => e != _BodyLanguage.file).toList();
-
-  String? getBody() {
-    if (_bodyLanguage == _BodyLanguage.none || _bodyLanguage == _BodyLanguage.file) return null;
-    return body?.text;
-  }
-
-  /// 请求体字节：FILE 类型按 multipart/form-data 编码（含所选文件内容），
-  /// 其他类型为 UTF-8 编码的编辑器文本；[render] 用于渲染环境变量。
-  Future<List<int>?> getBodyBytes(String Function(String) render) async {
-    if (_bodyLanguage == _BodyLanguage.none) return null;
-    if (_bodyLanguage == _BodyLanguage.file) {
-      final parts = multipartKey.currentState?.toParts() ?? [];
-      for (final part in parts) {
-        part.name = render(part.name);
-        part.value = render(part.value);
-      }
-      return MultipartFormBuilder.build(_boundary, parts);
+  /// 可直接发送的 body 字节；NONE 返回 null。
+  /// multipart 文本值在此渲染环境变量，同时把带 boundary 的 Content-Type 写回 header 行；
+  /// 其余类型也在此渲染环境变量，调用方不再转换 body。
+  List<int>? getBodyBytes() {
+    switch (_bodyLanguage) {
+      case _BodyLanguage.none:
+        return null;
+      case _BodyLanguage.formUrl:
+        return FormUrl.buildBytes(formData);
+      case _BodyLanguage.formData:
+        headerKey.currentState
+            ?.setParam('Content-Type', 'multipart/form-data; boundary=$_boundary');
+        return Multipart.buildBytes(formData, boundary: _boundary);
+      default:
+        final text = body?.text ?? '';
+        return utf8.encode(EnvironmentManager.tryRender(text) ?? text);
     }
-
-    final text = getBody();
-    return text == null ? null : utf8.encode(render(text));
   }
 
   HttpHeaders? getHeaders() {
-    final headers = HttpHeaders.fromJson(headerKey.currentState?.getParams() ?? {});
-    // FILE 类型：确保 Content-Type 带 boundary（用户可能手动改过或删过该头）
-    if (_bodyLanguage == _BodyLanguage.file) {
-      headers.set(HttpHeaders.CONTENT_TYPE, MultipartFormBuilder.contentType(_boundary));
-    }
-    return headers;
+    return HttpHeaders.fromJson(headerKey.currentState?.getParams() ?? {});
   }
 
   @override
@@ -514,12 +493,7 @@ class _HttpState extends State<_HttpWidget> {
     message = widget.message;
     body = CodeForgeController()..text = widget.message?.bodyAsString ?? '';
     _bodyLanguage = _resolveLanguage(widget.message);
-    if (_bodyLanguage == _BodyLanguage.file) {
-      // FILE 类型需要保证 Content-Type 带 boundary
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _syncContentTypeHeader(_BodyLanguage.file);
-      });
-    }
+    _loadFormData(widget.message);
     if (widget.message?.headers == null && !widget.readOnly) {
       initHeader["User-Agent"] = ["ProxyPin/${AppConfiguration.version}"];
       initHeader["Accept"] = ["*/*"];
@@ -537,7 +511,27 @@ class _HttpState extends State<_HttpWidget> {
     this.message = message;
     body?.text = message?.bodyAsString ?? '';
     _bodyLanguage = _resolveLanguage(message);
+    _loadFormData(message);
     headerKey.currentState?.refreshParam(message?.headers.getHeaders());
+  }
+
+  /// form-url / multipart 请求：解析已有 body 回填表单（multipart 保留原 boundary）；否则重置
+  void _loadFormData(HttpMessage? msg) {
+    final ct = msg?.headers.contentType.toLowerCase() ?? '';
+    final msgBody = msg?.body;
+    if (msgBody != null && msgBody.isNotEmpty) {
+      if (ct.contains('multipart/form-data')) {
+        formData = Multipart.parse(msgBody, ct);
+        _boundary = Multipart.boundaryFromContentType(ct) ?? Multipart.newBoundary();
+        return;
+      }
+      if (ct.contains('application/x-www-form-urlencoded')) {
+        formData = FormUrl.parse(msgBody);
+        return;
+      }
+    }
+    formData = FormBody();
+    _boundary = Multipart.newBoundary();
   }
 
   /// 根据消息推断编辑器初始语言；初始化推断不会回写 header。
@@ -558,13 +552,7 @@ class _HttpState extends State<_HttpWidget> {
 
     final ct = message.contentType;
     for (final entry in _bodyLanguageToContentType.entries) {
-      if (entry.value != ct) continue;
-      // multipart/form-data 的「新请求」直接使用 FILE 表单编辑；
-      // 已有 body 内容时（如断点编辑抓包请求）继续用 FORM-DATA 文本编辑，避免丢失原始内容。
-      if (entry.key == _BodyLanguage.formData && message is HttpRequest && bodyEmpty) {
-        return _BodyLanguage.file;
-      }
-      return entry.key;
+      if (entry.value == ct) return entry.key;
     }
     return _BodyLanguage.json;
   }
@@ -616,9 +604,20 @@ class _HttpState extends State<_HttpWidget> {
           child: SingleChildScrollView(child: HttpBodyWidget(httpMessage: message, hideRequestRewrite: true)));
     }
 
+    if (_bodyLanguage == _BodyLanguage.formData || _bodyLanguage == _BodyLanguage.formUrl) {
+      return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
+        _bodyToolbar(),
+        const SizedBox(height: 3),
+        Expanded(child: FormBodyEditor(
+          key: formEditorKey,
+          form: formData,
+          allowFiles: _bodyLanguage == _BodyLanguage.formData,
+        )),
+      ]);
+    }
+
     final isCN = localizations.localeName == 'zh';
     final isNone = _bodyLanguage == _BodyLanguage.none;
-    final isFile = _bodyLanguage == _BodyLanguage.file;
     final ct = _bodyLanguageToContentType[_bodyLanguage];
     final language = ct == null ? null : HighlightLanguages.getLanguage(ct);
     final isDark = Theme.brightnessOf(context) == Brightness.dark;
@@ -630,30 +629,6 @@ class _HttpState extends State<_HttpWidget> {
             'root': const TextStyle(color: Color(0xffabb2bf)).copyWith(backgroundColor: pageBg),
           }
         : baseTheme;
-
-    // FILE 类型使用 multipart 表单，其他类型使用代码编辑器
-    final Widget bodyEditor = isFile
-        ? KeepAliveWrapper(
-            child: SingleChildScrollView(child: MultipartFormEditor(key: multipartKey, boundary: _boundary)))
-        : Container(
-            decoration: BoxDecoration(border: Border.all(color: Colors.black12)),
-            child: CodeForge(
-              // CodeForge 把 language 当作 late final 在 initState 里固定，
-              // 切换数据类型后必须靠新的 key 重建组件才能让高亮实时生效；
-              // controller 由本 State 持有，重建不会丢文本。
-              key: ValueKey('body-editor-${_bodyLanguage.name}-$_bodyWrap'),
-              controller: body!,
-              autoFocus: true,
-              lineWrap: _bodyWrap,
-              language: language,
-              enableGuideLines: false,
-              selectionStyle: CodeSelectionStyle(cursorColor: Theme.of(context).colorScheme.primary),
-              editorTheme: editorTheme,
-              textStyle: const TextStyle(fontSize: 14.2),
-              finderBuilder: (c, controller) => FindPanelView(controller: controller),
-            ),
-          );
-
     return Padding(
       padding: const EdgeInsets.only(top: 8, right: 10, bottom: 10),
       child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
@@ -667,7 +642,24 @@ class _HttpState extends State<_HttpWidget> {
                     style: TextStyle(color: Theme.of(context).hintColor),
                   ),
                 )
-              : bodyEditor,
+              : Container(
+                  decoration: BoxDecoration(border: Border.all(color: Colors.black12)),
+                  child: CodeForge(
+                    // CodeForge 把 language 当作 late final 在 initState 里固定，
+                    // 切换数据类型后必须靠新的 key 重建组件才能让高亮实时生效；
+                    // controller 由本 State 持有，重建不会丢文本。
+                    key: ValueKey('body-editor-${_bodyLanguage.name}-$_bodyWrap'),
+                    controller: body!,
+                    autoFocus: true,
+                    lineWrap: _bodyWrap,
+                    language: language,
+                    enableGuideLines: false,
+                    selectionStyle: CodeSelectionStyle(cursorColor: Theme.of(context).colorScheme.primary),
+                    editorTheme: editorTheme,
+                    textStyle: const TextStyle(fontSize: 14.2),
+                    finderBuilder: (c, controller) => FindPanelView(controller: controller),
+                  ),
+                ),
         ),
       ]),
     );
@@ -677,8 +669,10 @@ class _HttpState extends State<_HttpWidget> {
     final localizations = AppLocalizations.of(context)!;
     final isCN = localizations.localeName == 'zh';
     final color = Theme.of(context).colorScheme.primary;
-    // 文本类数据类型才支持换行/美化/复制
-    final textMode = _bodyLanguage != _BodyLanguage.none && _bodyLanguage != _BodyLanguage.file;
+    // NONE 无 body；FORM-DATA/FORM-URL 由表单构建器管理，纯文本工具均不适用
+    final textToolsDisabled = _bodyLanguage == _BodyLanguage.none ||
+        _bodyLanguage == _BodyLanguage.formData ||
+        _bodyLanguage == _BodyLanguage.formUrl;
 
     return SizedBox(
         height: 34,
@@ -690,7 +684,7 @@ class _HttpState extends State<_HttpWidget> {
               value: _bodyLanguage,
               isDense: true,
               icon: const Icon(Icons.arrow_drop_down, size: 18),
-              items: _bodyLanguageOptions
+              items: _BodyLanguage.values
                   .map((e) => DropdownMenuItem(
                       value: e,
                       child: Text(_bodyLanguageLabels[e] ?? e.name.toUpperCase(),
@@ -703,57 +697,76 @@ class _HttpState extends State<_HttpWidget> {
               },
             ),
           ),
-          const Spacer(),
-          IconButton(
-            tooltip: localizations.wordWrap,
-            iconSize: 16,
-            visualDensity: VisualDensity.compact,
-            icon: Icon(Icons.wrap_text, color: _bodyWrap ? color : null),
-            onPressed: textMode ? () => setState(() => _bodyWrap = !_bodyWrap) : null,
-          ),
-          SizedBox(width: 3),
-          IconButton(
-            tooltip: localizations.format,
-            iconSize: 16,
-            visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.auto_fix_high),
-            onPressed: textMode ? _beautifyBody : null,
-          ),
-          SizedBox(width: 3),
-          IconButton(
-            tooltip: localizations.copy,
-            iconSize: 16,
-            visualDensity: VisualDensity.compact,
-            icon: const Icon(Icons.copy),
-            onPressed: textMode
-                ? () {
-                    final text = body?.text ?? '';
-                    if (text.isEmpty) return;
-                    Clipboard.setData(ClipboardData(text: text));
-                    FlutterToastr.show(localizations.copied, context);
-                  }
-                : null,
-          ),
+          // FORM-DATA/FORM-URL：添加入口放工具栏（添加文本；multipart 另有选择文件）
+          if (_bodyLanguage == _BodyLanguage.formData || _bodyLanguage == _BodyLanguage.formUrl) ...[
+            const Spacer(),
+            TextButton.icon(
+              onPressed: () => formEditorKey.currentState?.addTextField(),
+              icon: const Icon(Icons.text_fields, size: 16),
+              // 中文"添加文本"不空格，英文"Add Text"需空格
+              label: Text(isCN ? '${localizations.add}${localizations.text}'
+                  : '${localizations.add} ${localizations.text}',
+                  style: const TextStyle(fontSize: 12.5)),
+            ),
+            if (_bodyLanguage == _BodyLanguage.formData)
+              TextButton.icon(
+                onPressed: () => formEditorKey.currentState?.addFiles(),
+                icon: const Icon(Icons.upload_file, size: 16),
+                label: Text(localizations.selectFile, style: const TextStyle(fontSize: 12.5)),
+              ),
+          ],
+          // 其他文本类型：换行/美化/复制
+          if (!textToolsDisabled) ...[
+            const Spacer(),
+            IconButton(
+              tooltip: localizations.wordWrap,
+              iconSize: 16,
+              visualDensity: VisualDensity.compact,
+              icon: Icon(Icons.wrap_text, color: _bodyWrap ? color : null),
+              onPressed: () => setState(() => _bodyWrap = !_bodyWrap),
+            ),
+            SizedBox(width: 3),
+            IconButton(
+              tooltip: localizations.format,
+              iconSize: 16,
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.auto_fix_high),
+              onPressed: _beautifyBody,
+            ),
+            SizedBox(width: 3),
+            IconButton(
+              tooltip: localizations.copy,
+              iconSize: 16,
+              visualDensity: VisualDensity.compact,
+              icon: const Icon(Icons.copy),
+              onPressed: () {
+                final text = body?.text ?? '';
+                if (text.isEmpty) return;
+                Clipboard.setData(ClipboardData(text: text));
+                FlutterToastr.show(localizations.copied, context);
+              },
+            ),
+          ],
         ]));
   }
 
   /// 用户主动切换数据类型时，把 Content-Type 请求头改成对应 MIME。
   /// - NONE：删除 Content-Type；body 不发。
   /// - RAW：保持原 header 不动。
-  /// - FILE：写入 multipart/form-data，并自动补充随机 boundary 参数。
   /// - 其他：写入对应 MIME。
   void _syncContentTypeHeader(_BodyLanguage lang) {
     if (lang == _BodyLanguage.raw) return;
     final headerState = headerKey.currentState;
     if (headerState == null) return;
 
-    if (lang == _BodyLanguage.none) {
-      headerState.removeParam('Content-Type');
+    // FORM-DATA 需要带上 boundary 才是合法的 Content-Type
+    if (lang == _BodyLanguage.formData) {
+      headerState.setParam('Content-Type', 'multipart/form-data; boundary=$_boundary');
       return;
     }
 
-    if (lang == _BodyLanguage.file) {
-      headerState.setParam('Content-Type', MultipartFormBuilder.contentType(_boundary));
+    if (lang == _BodyLanguage.none) {
+      headerState.removeParam('Content-Type');
       return;
     }
 

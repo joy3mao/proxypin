@@ -54,6 +54,8 @@
   "done": "เสร็จสิ้น",
   "download": "ดาวน์โหลด",
   "edit": "แก้ไข",
+  "moveUp": "เลื่อนขึ้น",
+  "moveDown": "เลื่อนลง",
   "editReportServer": "แก้ไขเซิร์ฟเวอร์รายงาน",
   "editRequest": "แก้ไขและส่ง",
   "emptyData": "ไม่มีข้อมูล",
@@ -246,7 +248,6 @@
   "view": "ดู",
   "cipher": "รหัสลับ",
   "other": "อื่นๆ",
-
   "environment": "สภาพแวดล้อม",
   "environmentVariables": "ตัวแปรสภาพแวดล้อม",
   "envGlobal": "ส่วนกลาง",
@@ -255,11 +256,10 @@
   "envDeleteConfirm": "ลบสภาพแวดล้อมนี้?",
   "envEmptyHint": "ยังไม่มีตัวแปร คลิก + เพื่อเพิ่ม",
   "envUsageHint": "ใช้ %s ในกฎ หรืออ่าน/เขียน context.env ในสคริปต์",
-
+  "envInsertBuiltIn": "Insert built-in variable",
   "weakNetwork": "จำกัดเครือข่าย",
   "weakNetworkPreset": "พรีเซ็ต",
   "weakNetworkPresetOffline": "ออฟไลน์",
-
   "weakNetworkPresetSlow": "ช้า",
   "weakNetworkPresetWeak": "อ่อน",
   "weakNetworkLatency": "หน่วงเวลา",
@@ -267,5 +267,12 @@
   "weakNetworkDownload": "ดาวน์โหลด",
   "weakNetworkBandwidth": "แบนด์วิดท์",
   "weakNetworkLossRate": "อัตราแพ็กเก็ตหาย",
-  "weakNetworkRules": "กฎ URL"
+  "weakNetworkRules": "กฎ URL",
+  "replayTasks": "งานส่งซ้ำ",
+  "clearFinished": "ล้างรายการที่เสร็จสิ้น",
+  "statusWaiting": "รออยู่",
+  "statusCancelled": "ยกเลิกแล้ว",
+  "statusPaused": "หยุดชั่วคราว",
+  "pause": "หยุดชั่วคราว",
+  "resume": "ทำงานต่อ"
 }

@@ -153,7 +153,7 @@ Widget multiWindow(String windowId, Map<dynamic, dynamic> argument) {
   }
 
   if (argument['name'] == 'AesPage') {
-    return AesPage();
+    return AesPage(text: argument['text']);
   }
 
   //脚本日志
@@ -183,7 +183,8 @@ enum Operation {
   update,
   delete,
   enabled,
-  refresh;
+  refresh,
+  reorder;
 
   static Operation of(String name) {
     return values.firstWhere((element) => element.name == name);
@@ -195,13 +196,14 @@ class MultiWindow {
 
   /// 刷新请求重写
   static Future<void> invokeRefreshRewrite(Operation operation,
-      {int? index, RequestRewriteRule? rule, List<RewriteItem>? items, bool? enabled}) async {
+      {int? index, RequestRewriteRule? rule, List<RewriteItem>? items, bool? enabled, List<int>? order}) async {
     await DesktopMultiWindow.invokeMainWindowMethod("refreshRequestRewrite", {
       "enabled": enabled,
       "operation": operation.name,
       'index': index,
       'rule': rule?.toJson(),
-      'items': items?.map((e) => e.toJson()).toList()
+      'items': items?.map((e) => e.toJson()).toList(),
+      'order': order
     });
   }
 
@@ -255,6 +257,15 @@ class MultiWindow {
         break;
       case Operation.enabled:
         requestRewrites.enabled = arguments['enabled'];
+        break;
+      case Operation.reorder:
+        //order 为新的顺序：每个元素是规则在原列表中的下标
+        var newOrder = (arguments['order'] as List<dynamic>).map((e) => e as int).toList();
+        var oldRules = requestRewrites.rules;
+        var reordered = newOrder.map((i) => oldRules[i]).toList();
+        requestRewrites.rules
+          ..clear()
+          ..addAll(reordered);
         break;
       default:
         break;
@@ -361,6 +372,26 @@ Future<void> encodeWindow(EncoderType type, BuildContext context, [String? text]
   if (!context.mounted) return;
   await window.setTitle(AppLocalizations.of(context)!.encode);
   await window.setSize(Size(900 * ratio, 600 * ratio));
+  await window.center();
+  await window.show();
+}
+
+///打开 AES 窗口
+Future<void> openAesWindow(BuildContext context, String text) async {
+  if (Platforms.isMobile()) {
+    Navigator.of(context).push(MaterialPageRoute(builder: (context) => AesPage(text: text)));
+    return;
+  }
+
+  var ratio = 1.0;
+  if (Platform.isWindows) {
+    ratio = WindowManager.instance.getDevicePixelRatio();
+  }
+  final window = await DesktopMultiWindow.createWindow(jsonEncode(
+    {'name': 'AesPage', 'text': text},
+  ));
+  await window.setTitle('AES');
+  await window.setSize(Size(700 * ratio, 672 * ratio));
   await window.center();
   await window.show();
 }

@@ -37,6 +37,7 @@ import 'package:proxypin/ui/configuration.dart';
 import 'package:proxypin/ui/content/panel.dart';
 import 'package:proxypin/ui/desktop/request/request.dart';
 import 'package:proxypin/ui/mobile/request/repeat.dart';
+import 'package:proxypin/utils/replay_task.dart';
 import 'package:proxypin/ui/mobile/request/request_editor.dart';
 import 'package:proxypin/ui/mobile/setting/request_breakpoint.dart';
 import 'package:proxypin/ui/mobile/setting/request_map.dart';
@@ -58,6 +59,7 @@ class RequestRow extends StatefulWidget {
   final MultiSelectController selectionController;
   final RequestSelectionHandlers selectionHandlers;
   final Function(VoidCallback refresh)? onMount; // 注册刷新回调
+  final VoidCallback? onUnmount; // 注销刷新回调
 
   const RequestRow({
     super.key,
@@ -69,6 +71,7 @@ class RequestRow extends StatefulWidget {
     required this.index,
     required this.selectionHandlers,
     this.onMount,
+    this.onUnmount,
   });
 
   @override
@@ -110,6 +113,12 @@ class RequestRowState extends State<RequestRow> {
     });
   }
 
+  @override
+  void dispose() {
+    widget.onUnmount?.call();
+    super.dispose();
+  }
+
   Color? color(String url) {
     if (highlightColor != null) {
       return highlightColor;
@@ -131,13 +140,15 @@ class RequestRowState extends State<RequestRow> {
   Widget build(BuildContext context) {
     String url = widget.displayDomain ? request.requestUrl : request.path;
     var operationName = request.graphqlOperationName;
-    var title = Strings.autoLineString('${request.method.name} $url');
+    var title = request.protocolVersion == 'MQTT' ? 'MQTT $url' : Strings.autoLineString('${request.method.name} $url');
 
     var time = formatDate(request.requestTime, [HH, ':', nn, ':', ss]);
     var contentType = response?.contentType.name.toUpperCase() ?? '';
     var packagesSize = getPackagesSize(request, response);
 
-    var subTitle = '$time - [${response?.status.code ?? ''}] $contentType $packagesSize ${response?.costTime() ?? ''}';
+    var subTitle = request.protocolVersion == 'MQTT'
+        ? '$time - ${request.messages.length} packets'
+        : '$time - [${response?.status.code ?? ''}] $contentType $packagesSize ${response?.costTime() ?? ''}';
 
     var highlightColor = color(url);
 
@@ -164,7 +175,9 @@ class RequestRowState extends State<RequestRow> {
                 TextSpan(text: '#${widget.index} ', style: const TextStyle(fontSize: 11, color: Colors.teal)),
                 TextSpan(text: subTitle, style: const TextStyle(fontSize: 11, color: Colors.grey)),
               ])),
-          trailing: getIcon(response, color: highlightColor),
+          trailing: request.protocolVersion == 'MQTT'
+              ? const Icon(Icons.hub_outlined, color: Colors.teal)
+              : getIcon(response, color: highlightColor),
           contentPadding:
               Platform.isIOS ? const EdgeInsets.symmetric(horizontal: 8) : const EdgeInsets.only(left: 3, right: 5),
           onTap: () {
@@ -477,7 +490,10 @@ class RequestRowState extends State<RequestRow> {
     await Navigator.maybePop(availableContext);
     var pageRoute = MaterialPageRoute(
         builder: (context) => futureWidget(SharedPreferences.getInstance(),
-            (prefs) => MobileCustomRepeat(onRepeat: () => onRepeat(request), prefs: prefs)));
+            (prefs) => MobileCustomRepeat(
+                onScheduled: (cfg) =>
+                    ReplayTaskManager.instance.start(request: request, action: () => onRepeat(request), config: cfg),
+                prefs: prefs)));
 
     Navigator.push(getContext(), pageRoute);
   }

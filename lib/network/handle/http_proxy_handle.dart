@@ -108,7 +108,7 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
       // log.d(
       //     "[${channel.id}] streamId:${httpRequest.streamId ?? ''} ${httpRequest.protocolVersion}  ${httpRequest.method.name} ${httpRequest.requestUrl}");
       if (HostFilter.filter(httpRequest.hostAndPort?.host)) {
-        await remoteChannel?.write(channelContext, httpRequest);
+        if (remoteChannel != null) await channelContext.writeForwardedRequest(remoteChannel, httpRequest);
         return;
       }
 
@@ -152,7 +152,7 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
         final requestUri = request.requestUri!;
         request.uri = "${requestUri.path}${requestUri.hasQuery ? '?${requestUri.query}' : ''}";
       }
-      await remoteChannel?.write(channelContext, request);
+      if (remoteChannel != null) await channelContext.writeForwardedRequest(remoteChannel, request);
     }
   }
 
@@ -202,7 +202,7 @@ class HttpProxyChannelHandler extends ChannelHandler<HttpRequest> {
   Future<Channel> _getRemoteChannel(
       ChannelContext channelContext, Channel clientChannel, HttpRequest httpRequest) async {
     //客户端连接 作为缓存
-    Channel? remoteChannel = channelContext.serverChannel;
+    Channel? remoteChannel = await channelContext.readyServerChannel;
     if (remoteChannel != null) {
       return remoteChannel;
     }
@@ -300,9 +300,15 @@ class HttpResponseProxyHandler extends ChannelHandler<HttpResponse> {
     // log.i("[${clientChannel.id}] Response $msg");
 
     HttpResponse? response = msg;
+    //请求上下文缺失（如 h2 响应早于请求关联）时直接透传，不走拦截器
+    if (request == null) {
+      listener?.onResponse(channelContext, msg);
+      await clientChannel.write(channelContext, msg);
+      return;
+    }
     //拦截器
     for (var interceptor in interceptors) {
-      response = await interceptor.onResponse(request!, response!);
+      response = await interceptor.onResponse(request, response!);
       if (response == null) {
         logger.d("[${clientChannel.id}] Interceptor returned null, stopping processing");
         // Interceptor returned null, stopping processing

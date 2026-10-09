@@ -35,6 +35,7 @@ import 'package:proxypin/ui/component/utils.dart';
 import 'package:proxypin/ui/component/widgets.dart';
 import 'package:proxypin/ui/content/panel.dart';
 import 'package:proxypin/ui/mobile/request/repeat.dart';
+import 'package:proxypin/utils/replay_task.dart';
 import 'package:proxypin/ui/mobile/request/request_editor.dart';
 import 'package:proxypin/ui/mobile/setting/request_rewrite.dart';
 import 'package:proxypin/ui/mobile/setting/script.dart';
@@ -97,9 +98,8 @@ class _FavoritesState extends State<MobileFavorites> {
                   tooltip: localizations.import,
                   icon: const Icon(Icons.download_for_offline_outlined, size: 20),
                   onPressed: () async {
-                    final result = await FilePicker.pickFiles(
+                    final file = await FilePicker.pickFile(
                         type: FileType.custom, allowedExtensions: ['json', 'har']);
-                    final file = result?.files.isNotEmpty == true ? result!.files.first : null;
                     if (file == null) return;
                     final path = await _materializePickedFile(file);
                     if (path == null) return;
@@ -375,7 +375,10 @@ class _FavoriteItemState extends State<_FavoriteItem> {
     Navigator.of(context).pop();
     Navigator.of(context).push(MaterialPageRoute(
         builder: (context) => futureWidget(SharedPreferences.getInstance(),
-            (prefs) => MobileCustomRepeat(onRepeat: () => onRepeat(request), prefs: prefs))));
+            (prefs) => MobileCustomRepeat(
+                onScheduled: (cfg) =>
+                    ReplayTaskManager.instance.start(request: request, action: () => onRepeat(request), config: cfg),
+                prefs: prefs))));
   }
 
   void onRepeat(HttpRequest request) {

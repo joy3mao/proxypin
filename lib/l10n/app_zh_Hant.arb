@@ -25,7 +25,6 @@
   "download": "下載",
   "config": "設定",
   "version": "版本",
-
   "start": "開始",
   "stop": "停止",
   "clear": "清空",
@@ -81,7 +80,6 @@
   "response": "回應",
   "statusCode": "狀態碼",
   "duration": "耗時",
-
   "done": "完成",
   "type": "類型",
   "enable": "啟用",
@@ -101,6 +99,8 @@
   "action": "行為",
   "multiple": "多選",
   "edit": "編輯",
+  "moveUp": "上移",
+  "moveDown": "下移",
   "disabled": "停用",
   "requestRewriteDeleteConfirm": "是否刪除{size}條規則?",
   "useGuide": "使用文件",
@@ -345,10 +345,8 @@
   "appUpdateUpdateNowBtnTxt": "現在更新",
   "appUpdateLaterBtnTxt": "稍後再說",
   "appUpdateIgnoreBtnTxt": "忽略",
-
   "requestMap": "請求映射",
   "requestMapDescribe": "不請求遠端服務，使用本地配置或腳本進行回應",
-
   "automatic": "自動",
   "manual": "手動",
   "certNotInstalled": "未安裝憑證",
@@ -357,14 +355,11 @@
   "sponsorSupport": "支持項目持續開發",
   "sponsorThanks": "感謝支持，可用以下方式協助項目發展。",
   "sponsorAfdian": "愛發電贊助",
-
   "privacyPolicy": "隱私協議",
   "privacyContent": "本工具僅在本機處理抓包資料，不會蒐集或上傳個資。",
-
   "local": "本地",
   "remoteUrl": "遠端URL",
   "preview": "預覽",
-
   "environment": "環境",
   "environmentVariables": "環境變數",
   "envGlobal": "全域",
@@ -373,11 +368,10 @@
   "envDeleteConfirm": "確定刪除此環境?",
   "envEmptyHint": "尚無變數,點擊 + 新增。",
   "envUsageHint": "規則中使用 %s 引用變數,腳本中透過 context.env 讀寫。",
-
+  "envInsertBuiltIn": "插入內建變數",
   "weakNetwork": "網路限制",
   "weakNetworkPreset": "預設",
   "weakNetworkPresetOffline": "離線",
-
   "weakNetworkPresetSlow": "較慢",
   "weakNetworkPresetWeak": "弱網",
   "weakNetworkLatency": "延遲",
@@ -385,5 +379,12 @@
   "weakNetworkDownload": "下行",
   "weakNetworkBandwidth": "頻寬",
   "weakNetworkLossRate": "遺失率",
-  "weakNetworkRules": "URL 規則"
+  "weakNetworkRules": "URL 規則",
+  "replayTasks": "重放任務",
+  "clearFinished": "清除已完成",
+  "statusWaiting": "等待中",
+  "statusCancelled": "已取消",
+  "statusPaused": "已暫停",
+  "pause": "暫停",
+  "resume": "繼續"
 }
